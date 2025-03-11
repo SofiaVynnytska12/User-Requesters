@@ -1,9 +1,14 @@
 # User-Requesters
 This project is designed to handle logistics data efficiently, including shipment, receipt, status change of parcels, unique identification numbers, and arrival dates to warehouses. It utilizes a distributed system approach with Apache Kafka for messaging and Docker for containerization.
+
 Programming language: Python
+
 Database: MySQL
+
 Message Broker: Apache Kafka
+
 Containerization: Docker (Bitnami Kafka & Zookeeper images)  
+
 IDE: PyCharm (with Big Data Tools)
 
 

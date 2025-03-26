@@ -1,18 +1,14 @@
 # User-Requesters
-This project simulates logistics data management by tracking the lifecycle of parcels, including registration, arrival at warehouses, and delivery. It uses Apache Kafka in KRaft mode (without Zookeeper) for real-time messaging and MySQL for persistent storage, all containerized with Docker. Each event is published with a unique key and value, ensuring traceability and consistency across systems.
+This project simulates logistics data by generating mock parcel events and sending them to Kafka.
 ## Technologies
-- **Programming Language**: Python 3.13.2
-- **Database**: MySQL 8.0 (schema managed with Liquibase)
-- **Message Broker**: Apache Kafka (Bitnami Kafka Docker image, latest version, e.g., 3.7.0) in KRaft mode
-- **Containerization**: Docker 28.0.1
-- **IDE**: PyCharm (with Big Data Tools and Database Tools plugins)
-- **Migration Tool**: Liquibase 4.27.0
-- **Version Control**: GitHub
-
-
+- **Programming Language**: Python 3.12
+- **Message Broker**: Apache Kafka (KRaft mode)
+- **Containerization**: Docker
+- **IDE**: PyCharm
 
 ## Setup and Running
-1. **Clone the repository**:
+**Clone the repository**:
+
    ```
    git clone https://github.com/SofiaVynnytska12/User-Requesters.git
    cd User-Requesters

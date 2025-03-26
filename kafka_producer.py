@@ -3,7 +3,7 @@ import uuid
 import time
 import random
 import mysql.connector
-from datetime import datetime
+from datetime import datetime, UTC  # Додаємо UTC
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
@@ -35,25 +35,32 @@ def connect_to_mysql():
         print(f"Failed to connect to MySQL: {e}")
         return None
 
-def create_table(connection):
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS parcels (
-                tracking_number VARCHAR(36) PRIMARY KEY,
-                created_date DATETIME,
-                arrival_date DATETIME DEFAULT NULL,
-                status ENUM('Sent', 'Arrived', 'Delivered') NOT NULL,
-                origin VARCHAR(100) NOT NULL,
-                destination VARCHAR(100) NOT NULL,
-                last_updated DATETIME NOT NULL
-            )
-        """)
-        connection.commit()
-        cursor.close()
-        print("Table 'parcels' created or already exists.")
-    except mysql.connector.Error as e:
-        print(f"Error creating table: {e}")
+def generate_parcel_data(tracking_number, status, created_date, arrival_date=None):
+    current_time = datetime.now(UTC).isoformat() + ".000Z"
+    cities = ["Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro", "Zaporizhzhia", "Mykolaiv", "Vinnytsia", "Kherson", "Poltava"]
+    origin = random.choice(cities)
+    destination = random.choice([city for city in cities if city != origin])
+    return {
+        "tracking_number": tracking_number,
+        "created_date": created_date,
+        "arrival_date": arrival_date,
+        "status": status,
+        "origin": origin,
+        "destination": destination,
+        "last_updated": current_time,
+        "event_type": status
+    }
+
+def generate_kafka_key(event_type):
+    timestamp = datetime.now(UTC).isoformat() + ".000Z"
+    unique_id = str(uuid.uuid4())
+    service_name = "logistics_service"
+    return {
+        "generation_timestamp": timestamp,
+        "uuid": unique_id,
+        "service_name": service_name,
+        "event_type": event_type
+    }
 
 def save_to_mysql(connection, data):
     try:
@@ -82,36 +89,6 @@ def save_to_mysql(connection, data):
     except mysql.connector.Error as e:
         print(f"Error saving to MySQL: {e}")
 
-def generate_parcel_data(tracking_number, status, created_date, arrival_date=None):
-    current_time = datetime.utcnow().isoformat() + ".000Z"
-    cities = [
-        "Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro",
-        "Zaporizhzhia", "Mykolaiv", "Vinnytsia", "Kherson", "Poltava"
-    ]
-    origin = random.choice(cities)
-    destination = random.choice([city for city in cities if city != origin])
-    return {
-        "tracking_number": tracking_number,
-        "created_date": created_date,
-        "arrival_date": arrival_date,
-        "status": status,
-        "origin": origin,
-        "destination": destination,
-        "last_updated": current_time,
-        "event_type": status
-    }
-
-def generate_kafka_key(event_type):
-    timestamp = datetime.utcnow().isoformat() + ".000Z"
-    unique_id = str(uuid.uuid4())
-    service_name = "logistics_service"
-    return {
-        "generation_timestamp": timestamp,
-        "uuid": unique_id,
-        "service_name": service_name,
-        "event_type": event_type
-    }
-
 def publish_event(producer, mysql_connection, tracking_number, status, created_date, arrival_date=None):
     if producer is None or mysql_connection is None:
         print("Kafka producer or MySQL not initialized.")
@@ -136,23 +113,20 @@ def simulate_parcel_lifecycle(producer, mysql_connection):
 
     while True:
         tracking_number = str(uuid.uuid4())
-        created_time = datetime.utcnow().isoformat() + ".000Z"
+        created_time = datetime.now(UTC).isoformat() + ".000Z"
 
         publish_event(producer, mysql_connection, tracking_number, "Sent", created_time)
-        time.sleep(10)
+        time.sleep(5)
 
-        arrival_time = datetime.utcnow().isoformat() + ".000Z"
+        arrival_time = datetime.now(UTC).isoformat() + ".000Z"
         publish_event(producer, mysql_connection, tracking_number, "Arrived", created_time, arrival_time)
-        time.sleep(10)
+        time.sleep(5)
 
         publish_event(producer, mysql_connection, tracking_number, "Delivered", created_time, arrival_time)
-        time.sleep(10)
-
+        time.sleep(5)
 
 if __name__ == "__main__":
     print("Starting Kafka producer and MySQL...")
     producer = create_producer()
     mysql_connection = connect_to_mysql()
-    if mysql_connection:
-        create_table(mysql_connection)
     simulate_parcel_lifecycle(producer, mysql_connection)

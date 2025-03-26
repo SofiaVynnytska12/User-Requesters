@@ -1,13 +1,15 @@
 # User-Requesters
 This project simulates logistics data management by tracking the lifecycle of parcels, including registration, arrival at warehouses, and delivery. It uses Apache Kafka in KRaft mode (without Zookeeper) for real-time messaging and MySQL for persistent storage, all containerized with Docker. Each event is published with a unique key and value, ensuring traceability and consistency across systems.
-
 ## Technologies
 - **Programming Language**: Python 3.13.2
-- **Database**: MySQL 8.0 (for persistent storage)
+- **Database**: MySQL 8.0 (schema managed with Liquibase)
 - **Message Broker**: Apache Kafka (Bitnami Kafka Docker image, latest version, e.g., 3.7.0) in KRaft mode
 - **Containerization**: Docker 28.0.1
-- **IDE**: PyCharm (with Database Tools plugin)
+- **IDE**: PyCharm (with Big Data Tools and Database Tools plugins)
+- **Migration Tool**: Liquibase 4.27.0
 - **Version Control**: GitHub
+
+
 
 ## Setup and Running
 1. **Clone the repository**:
@@ -16,47 +18,75 @@ This project simulates logistics data management by tracking the lifecycle of pa
    cd User-Requesters
    ```
 
-2. **Start Kafka and MySQL in Docker**:
-   - Ensure Docker Desktop is running.
-   - Run the services using Docker Compose:
-     ```
-     docker-compose up -d
-     ```
+2. **Install Prerequisites**:
 
-3. **Test Connections**:
-   - **Kafka**: Verify Kafka is running and check topics:
-     ```
-     docker exec -it user-requesters-kafka-1 kafka-topics.sh --bootstrap-server localhost:9092 --list
-     ```
-   - **MySQL**: Connect to MySQL and verify the database:
-     ```
-     docker exec -it user-requesters-mysql-1 mysql -uroot -proot -e "SHOW DATABASES;"
-     ```
+PyCharm: Download and install from jetbrains.com/pycharm/download/.
+Docker: Download and install Docker Desktop from docker.com/products/docker-desktop/, then launch it.
+Python: Ensure Python 3.13.2 is installed (download from python.org).
 
-4. **Run the Producer**:
-   - Install dependencies:
-     ```
-     pip install kafka-python mysql-connector-python
-     ```
-   - Start the Python script to generate and send data to Kafka and MySQL:
-     ```
-     python kafka_producer.py
-     ```
+3. **Install Liquibase and MySQL Driver**:
+Download Liquibase from liquibase.com/download (e.g., liquibase-4.27.0.zip) and extract it to a folder of your choice.
+Download the MySQL JDBC driver from dev.mysql.com/downloads/connector/j/ (select "Platform Independent", e.g., mysql-connector-j-8.0.33.zip), extract, and copy mysql-connector-j-8.0.33.jar to the project:
 
-5. **Consume Messages**:
-   - Check messages in the `user-requests` topic:
-     ```
-     docker exec -it user-requesters-kafka-1 kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic user-requests --from-beginning
-     ```
+```
+mkdir lib
+copy path\to\mysql-connector-j-8.0.33.jar lib\
+```
 
-6. **View Data in MySQL**:
-   - Open PyCharm Database tool, connect to `localhost:3306` (user: `root`, password: `root`, database: `logistics_db`), and query:
-     ```
-     SELECT * FROM parcels;
-     ```
+4. **Set Up Kafka and MySQL in Docker**:
+
+Open Docker Desktop and ensure it’s running (check for the green icon in the system tray).
+Start the services using Docker Compose:
+```
+docker-compose up -d
+```
+
+5**Apply Liquibase Migrations:**:
+
+Set up the database schema:
+path\to\liquibase\liquibase.bat --classpath=lib/mysql-connector-j-8.0.33.jar update
+
+
+6. **Test Connections**:
+
+Kafka: Verify Kafka is running and check topics:
+```
+docker exec -it user-requesters-kafka-1 kafka-topics.sh --bootstrap-server localhost:9092 --list
+```
+
+MySQL: Connect to MySQL and verify the database:
+```
+docker exec -it user-requesters-mysql-1 mysql -uroot -proot -e "SHOW DATABASES;"
+```
+
+7. **Run the Producer**:
+
+Install dependencies:
+
+```
+pip install kafka-python mysql-connector-python
+```
+
+Start the Python script to generate and send data to Kafka and MySQL:
+```
+python kafka_producer.py
+```
+
+8. **Consume Messages**:
+Check messages in the user-requests topic:
+```
+docker exec -it user-requesters-kafka-1 kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic user-requests --from-beginning
+```
+
+9. **View Data in MySQL**:
+Open PyCharm Database Tool, connect to localhost:3306 (user: root, password: root, database: logistics_db), and query:
+```
+SELECT * FROM parcels;
+```
 
 ## Data Schema
 The logistics data is generated in JSON format with ISO timestamps and stored simultaneously in Kafka and MySQL. Each message consists of a key and a value.
+
 
 ### Kafka Key Structure
 
